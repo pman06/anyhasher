@@ -154,7 +154,7 @@ jobs:
         run: cd backend && npm audit --audit-level=medium
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == s'refs/heads/main'
     needs: [security-audit, static-analysis, tests, lint]
     runs-on: ubuntu-latest
     # outputs:
