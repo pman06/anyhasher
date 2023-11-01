@@ -170,7 +170,7 @@ jobs:
           path: backend/build
 
       - name: Unzip artifact for deployment
-        run: unzip backend/build/backend-artifact.zip
+        run: unzip backend/build/backendartifact.zip
 
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
