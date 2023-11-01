@@ -98,7 +98,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
+        uses: github/codeql-action/init@v2
         with:
           language: javascript
 
@@ -114,7 +114,9 @@ jobs:
         run: cd backend && npm run build
 
       - name: Perform CodeQL Analysis
-        run: github/codeql-action/analyze@v1
+        run: github/codeql-action/analyze@v2
+        with:
+          category: "/language:javascript"
 
   security-audit:
     needs: [build]
