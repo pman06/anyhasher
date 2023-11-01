@@ -48,6 +48,11 @@ jobs:
           path: backend/node_modules
           key: node-modules-cache
 
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.1
+
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: cd backend && npm i
@@ -69,12 +74,45 @@ jobs:
           path: backend/node_modules
           key: node-modules-cache
 
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.1
+
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: cd backend && npm i
 
       - name: Test the code
         run: cd backend && npm t
+
+  static-analysis:
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          language: javascript
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.1
+
+      - name: Install dependencies
+        run: cd backend && npm i
+
+      - name: Build
+        run: cd backend && npm run build
+
+      - name: Perform CodeQL Analysis
+        run: github/codeql-action/analyze@v2
 
   security-audit:
     needs: [build]
