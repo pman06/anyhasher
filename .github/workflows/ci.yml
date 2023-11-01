@@ -112,7 +112,7 @@ jobs:
         run: cd backend && npm run build
 
       - name: Perform CodeQL Analysis
-        run: github/codeql-action/analyze@v2
+        run: github/codeql-action/analyze@v1
 
   security-audit:
     needs: [build]
