@@ -1,5 +1,21 @@
-name: Continuous Integration
-on: [push]
+name: Continuous Frontend Integration
+on:
+  push:
+    branches:
+      - master
+      - l4
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+
+  pull_request:
+    branches:
+      - master
+      - l4
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -8,7 +24,7 @@ jobs:
         id: cache
         uses: actions/cache@v3
         with:
-          path: backend/node_modules
+          path: frontend/node_modules
           key: node-modules-cache
 
       - name: Checkout
@@ -20,19 +36,19 @@ jobs:
           node-version: 16.15.0
 
       - name: Install dependencies
-        run: cd backend && npm i
+        run: cd frontend && npm i
 
       - name: Build
-        run: cd backend && npm run build
+        run: cd frontend && npm run build
 
       - name: Generate Artifact
-        run: cd backend/build && zip -r backendartifact.zip ./ -x '*.git*'
+        run: cd frontend/build && zip -r frontendartifact.zip ./ -x '*.git*'
 
       - name: Store Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: backend-artifact
-          path: backend/build/backendartifact.zip
+          name: frontend-artifact
+          path: frontend/build/frontendartifact.zip
 
   lint:
     needs: [build]
@@ -45,7 +61,7 @@ jobs:
         id: cache
         uses: actions/cache@v3
         with:
-          path: backend/node_modules
+          path: frontend/node_modules
           key: node-modules-cache
 
       - name: Setup Node
@@ -55,10 +71,10 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: cd backend && npm i
+        run: cd frontend && npm i
 
       - name: Lint the code
-        run: cd backend && npm run lint
+        run: cd frontend && npm run lint
 
   tests:
     needs: [build]
@@ -71,7 +87,7 @@ jobs:
         id: cache
         uses: actions/cache@v3
         with:
-          path: backend/node_modules
+          path: frontend/node_modules
           key: node-modules-cache
 
       - name: Setup Node
@@ -81,10 +97,10 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: cd backend && npm i
+        run: cd frontend && npm i
 
       - name: Test the code
-        run: cd backend && npm t
+        run: cd frontend && npm t
 
   static-analysis:
     needs: [build]
@@ -108,10 +124,10 @@ jobs:
           node-version: 16.15.0
 
       - name: Install dependencies
-        run: cd backend && npm i
+        run: cd frontend && npm i
 
       - name: Build
-        run: cd backend && npm run build
+        run: cd frontend && npm run build
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
@@ -131,4 +147,4 @@ jobs:
       - run: node -v
 
       - name: Check for security issues
-        run: cd backend && npm audit --audit-level=medium
+        run: cd frontend && npm audit --audit-level=medium

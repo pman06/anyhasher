@@ -1,0 +1,182 @@
+name: Continuous Backend Integration
+on:
+  push:
+    branches:
+      - master
+      - l4
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+
+  pull_request:
+    branches:
+      - master
+      - l4
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+
+env:
+  AZURE_WEBAPP_NAME: test-mywebapp-react # set this to your application's name
+  AZURE_WEBAPP_PACKAGE_PATH: "backend/build"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache nodemodules
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: backend/node_modules
+          key: node-modules-cache
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.0
+
+      - name: Install dependencies
+        run: cd backend && npm i
+
+      - name: Build
+        run: cd backend && npm run build
+
+      - name: Generate Artifact
+        run: cd backend/build && zip -r backendartifact.zip ./ -x '*.git*'
+
+      - name: Store Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: backend-artifact
+          path: backend/build/backendartifact.zip
+
+  lint:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache nodemodules
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: backend/node_modules
+          key: node-modules-cache
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.0
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cd backend && npm i
+
+      - name: Lint the code
+        run: cd backend && npm run lint
+
+  tests:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache nodemodules
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: backend/node_modules
+          key: node-modules-cache
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.0
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cd backend && npm i
+
+      - name: Test the code
+        run: cd backend && npm t
+
+  static-analysis:
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          language: javascript
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.0
+
+      - name: Install dependencies
+        run: cd backend && npm i
+
+      - name: Build
+        run: cd backend && npm run build
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  security-audit:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.15.0
+
+      - run: node -v
+
+      - name: Check for security issues
+        run: cd backend && npm audit --audit-level=medium
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: [security-audit, static-analysis, tests, lint]
+    runs-on: ubuntu-latest
+    # outputs:
+    #   url: ${{ steps.deployment.outputs.page_url }}
+    environment:
+      name: "production"
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    steps:
+      - name: Get Artifact
+        uses: actions/download-artifacts@v3
+        with:
+          name: backend-artifact
+          path: backend/build
+
+      - name: Unzip artifact for deployment
+        run: unzip backend/build/backend-artifact.zip
+
+      - name: "Deploy to Azure Web App"
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: "production"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
