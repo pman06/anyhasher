@@ -169,7 +169,7 @@ jobs:
           name: backend-artifact
           path: backend/build
 
-      - name: Unzip artifact for deployment
+      - name: "Unzip artifact for deployment"
         run: cd backend/build && unzip backendartifact.zip
 
       - name: "Deploy to Azure Web App"
