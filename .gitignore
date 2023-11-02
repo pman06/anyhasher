@@ -4,12 +4,12 @@
 **/terraform.tfstate.backup
 **/.terraform.lock.hcl
 /.idea
-
+.gitignore
 # dependencies
 **/node_modules
 /frontend/.pnp
 .pnp.js
-
+**/build/**
 # testing
 **/coverage
 
